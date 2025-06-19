@@ -1,0 +1,43 @@
+version: '3.8'
+
+networks:
+  directus-net:
+    driver: bridge
+
+services:
+  ssh-tunnel:
+    image: debian:bullseye-slim
+    container_name: ssh-tunnel
+    env_file:
+      - .env
+    volumes:
+      - ./ssh/fyta-app-test.pem:/id_rsa
+      - ./start-tunnel.sh:/start-tunnel.sh
+    command: sh /start-tunnel.sh
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "apt-get install -y netcat >/dev/null 2>&1 && nc -z 127.0.0.1 3307" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      directus-net:
+        aliases:
+          - mysql-tunnel
+
+  directus:
+    image: directus/directus:latest
+    container_name: directus
+    depends_on:
+      ssh-tunnel:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - 8055:8055
+    volumes:
+      - ./data/config:/var/directus/config
+      - ./data/uploads:/var/directus/public/uploads
+    restart: unless-stopped
+    networks:
+      - directus-net
