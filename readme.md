@@ -43,7 +43,7 @@ EC2_HOST=your-ec2-public-ip-or-hostname
 ### 2. Start Docker Compose
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 ### 3. Usage
